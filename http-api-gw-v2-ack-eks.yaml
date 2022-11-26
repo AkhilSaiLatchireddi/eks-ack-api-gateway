@@ -1,0 +1,62 @@
+---
+# Namespace creation for deploying resource
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "http-api-ack-eks-namespace"               ##### PLEASE UPDATE THE NAME FOR NAMESPACE
+---
+# Cereating HTTP API with api gateway
+apiVersion: apigatewayv2.services.k8s.aws/v1alpha1
+kind: API
+metadata:
+  name: "http-api-ack-eks"                          ##### PLEASE UPDATE THE NAME FOR API GATEWAY
+  namespace: "http-api-ack-eks-namespace"
+spec:
+  name: "http-api-ack-eks"                          ##### PLEASE UPDATE THE NAME FOR API GATEWAY
+  protocolType: HTTP
+---
+# Creating the Stage for API
+apiVersion: apigatewayv2.services.k8s.aws/v1alpha1
+kind: Stage
+metadata:
+  name: "http-api-ack-eks-stage-1"                ##### PLEASE UPDATE THE NAME FOR API GATEWAY STAGE  
+  namespace: "http-api-ack-eks-namespace"
+spec:
+  apiRef:
+    from:
+      name: "http-api-ack-eks"
+  stageName: "$default"
+  autoDeploy: true
+  description: "http-api-ack-eks auto deployed stage"
+---
+# Creating route-key for path
+apiVersion: apigatewayv2.services.k8s.aws/v1alpha1
+kind: Route
+metadata:
+  name: "http-api-ack-eks-route-vpc-link"                     ##### PLEASE UPDATE THE NAME FOR API GATEWAY ROUTE
+  namespace: "http-api-ack-eks-namespace"
+spec:
+  apiRef:
+    from:
+      name: "http-api-ack-eks"
+  routeKey: "ANY /{proxy+}"
+  targetRef:
+    from:
+      name: "http-api-ack-eks-to-vpc-integration"         #### PLEASE UPDATE THE NAME FOR API GATEWAY VPC INTEGRATION
+---
+# Creating a hook with route. it uses a public http site as backend
+apiVersion: apigatewayv2.services.k8s.aws/v1alpha1
+kind: Integration
+metadata:
+  name: "http-api-ack-eks-to-vpc-integration"             #### PLEASE UPDATE THE NAME FOR API GATEWAY VPC INTEGRATION
+  namespace: "http-api-ack-eks-namespace"
+spec:
+  apiRef:
+    from:
+      name: "http-api-ack-eks"
+  integrationType: HTTP_PROXY
+  integrationURI: "<ALB Listener arn>"               #### PLEASE UPDATE THE ALB Listener arn
+  integrationMethod: ANY
+  payloadFormatVersion: "1.0"
+  connectionID: "<vpc_link_id>"                   # PLEASE UPDATE THE API Gateway v2 vpc_link_id 
+  connectionType: "VPC_LINK"
